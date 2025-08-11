@@ -4,13 +4,15 @@
 let amigos = [];
 // Variable para guardar el último amigo sorteado y evitar que se repita
 let ultimoSorteado = null;
+// NUEVA VARIABLE: Para guardar los amigos ya sorteados
+let amigosSorteados = [];
 
 /**
  * Función AGREGAR con nuevas validaciones.
  */
 function agregarAmigo() {
     const nombreInput = document.getElementById('amigo');
-    const nombre = nombreInput.value.trim();
+    let nombre = nombreInput.value.trim();
 
     if (nombre === '') {
         alert('Por favor, inserte un nombre.');
@@ -24,6 +26,11 @@ function agregarAmigo() {
         alert('El nombre solo puede contener letras y espacios.');
         return;
     }
+
+    // NORMALIZAR: Primera letra mayúscula, resto minúsculas
+    nombre = nombre
+        .toLowerCase()
+        .replace(/(^|\s)([a-zñáéíóú])/g, l => l.toUpperCase());
 
     // VALIDACIÓN 2: Diferenciar mayúsculas y minúsculas (Pedro es igual a pedro).
     // Compara el nombre ingresado en minúsculas con los nombres de la lista en minúsculas.
@@ -50,21 +57,46 @@ function sortearAmigo() {
         return;
     }
 
-    let amigoSorteado;
+    // Si ya se sortearon todos los amigos, mostrar mensaje y deshabilitar botón
+    if (amigosSorteados.length === amigos.length) {
+        const resultadoElemento = document.getElementById('resultado');
+        resultadoElemento.textContent = 'Ya todos los amigos secretos fueron sorteados, debe reiniciar un nuevo Juego.';
+        document.getElementById('sortearBtn').disabled = true;
+        document.getElementById('reiniciarBtn').focus();
+        return;
+    }
 
-    // VALIDACIÓN 3: Evitar que el nombre sorteado se repita.
-    // Si hay más de un amigo, el sorteo se repetirá hasta que salga un nombre
-    // diferente al último que fue sorteado.
+    let receptor;
+    // Selecciona un receptor que no sea el dador (ultimoSorteado) y que no haya sido sorteado antes
     do {
         const indiceAleatorio = Math.floor(Math.random() * amigos.length);
-        amigoSorteado = amigos[indiceAleatorio];
-    } while (amigos.length > 1 && amigoSorteado === ultimoSorteado);
+        receptor = amigos[indiceAleatorio];
+    } while (
+        (amigos.length > 1 && receptor === ultimoSorteado) ||
+        amigosSorteados.includes(receptor)
+    );
 
-    // Guardamos el resultado de este sorteo para la próxima validación
-    ultimoSorteado = amigoSorteado;
+    // Verificación explícita: dador y receptor no pueden ser la misma persona
+    if (receptor === ultimoSorteado) {
+        // Esto nunca debería ocurrir por el do...while, pero se deja por claridad
+        alert('El dador y el receptor no pueden ser la misma persona.');
+        return;
+    }
+
+    ultimoSorteado = receptor;
+    amigosSorteados.push(receptor);
 
     const resultadoElemento = document.getElementById('resultado');
-    resultadoElemento.textContent = `¡El amigo secreto es: ${amigoSorteado}! 🎉`;
+    resultadoElemento.textContent = `¡El amigo secreto es: ${receptor}! 🎉`;
+
+    // Si ya se sortearon todos, deshabilitar botón y mostrar mensaje
+    if (amigosSorteados.length === amigos.length) {
+        setTimeout(() => {
+            resultadoElemento.textContent = 'Ya todos los amigos secretos fueron sorteados, debe reiniciar un nuevo Juego.';
+            document.getElementById('sortearBtn').disabled = true;
+            document.getElementById('reiniciarBtn').focus();
+        }, 1500);
+    }
 }
 
 
@@ -76,12 +108,14 @@ function reiniciarJuego() {
     amigos = [];
     // Se limpia el último sorteado
     ultimoSorteado = null;
+    amigosSorteados = []; // LIMPIAR REGISTRO DE SORTEADOS
     // Se borran los nombres de la lista visible
     document.getElementById('listaAmigos').innerHTML = '';
     // Se borra el resultado del sorteo
     document.getElementById('resultado').innerHTML = '';
     // Se enfoca el cursor en el campo de texto
     document.getElementById('amigo').focus();
+    document.getElementById('sortearBtn').disabled = false; // HABILITAR BOTÓN SORTEAR
 }
 
 /**
